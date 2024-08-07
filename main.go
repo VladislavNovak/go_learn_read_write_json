@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	pack_account "learn/read_write_json/account"
+	"learn/read_write_json/account"
+	"learn/read_write_json/recorder"
 )
 
 func getUserInput(title string) (userInput string) {
@@ -16,8 +17,11 @@ func main() {
 	isRepeat := true
 
 	for isRepeat {
-		if account, err := pack_account.NewAccount(userInputLogin, ""); err == nil {
+		if account, err := account.NewAccount(userInputLogin, ""); err == nil {
 			account.PrintData()
+
+			bytes := recorder.ConvertStructToBytes(account)
+			recorder.WriteToFile("account.json", bytes)
 			isRepeat = false
 		}
 	}
