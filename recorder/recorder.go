@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func ConvertStructToBytes(account *account.Account) []byte {
+func ConvertToBytes(account *account.Account) []byte {
 	bytes, _ := json.Marshal(account)
 	return bytes
 }

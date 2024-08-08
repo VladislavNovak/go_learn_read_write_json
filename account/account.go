@@ -1,46 +1,38 @@
 package account
 
 import (
-	"errors"
-	"fmt"
-	"math/rand"
+	"learn/read_write_json/utils"
+	"time"
 
 	"github.com/fatih/color"
 )
 
 type Account struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string    `json:"login"`
+	Password string    `json:"password"`
+	Url      string    `json:"url"`
+	CreateAt time.Time `json:"createAt"`
+	UpdateAt time.Time `json:"updateAt"`
 }
 
-func (account *Account) generatePassword(size int) {
-	symbols := []rune("abcdefgiklmnopqrstuvwyxz123456789!@#$%^&*()_+")
-	for i := 0; i < size; i++ {
-		account.Password += string(symbols[rand.Intn(len(symbols))])
-	}
+func (acc *Account) PrintData(count int) {
+	c := color.New(color.FgGreen)
+	c.Printf("%d: [%s] %s %s", count, acc.Login, acc.Url, acc.Password)
+	// Работа с форматом
+	c.Printf(", (created at %s)\n", acc.CreateAt.Local().Format(time.ANSIC))
+	// Можно получить данные о тегах модели
+	// el, _ := reflect.TypeOf(acc).Elem().FieldByName("Login")
+	// c.Println(el.Tag)
 }
 
-func (account Account) PrintData() {
-	c := color.New(color.FgCyan).Add(color.Underline)
-	c.Println("---")
-	fmt.Println("Логин:", account.Login)
-	fmt.Println("Пароль:", account.Password)
-	c.Println("---")
-}
-
-func NewAccount(login, password string) (*Account, error) {
-	if login == "" {
-		return nil, errors.New("login_error")
-	}
-
+func NewAccount() *Account {
 	account := &Account{
-		Login:    login,
-		Password: password,
+		Login:    utils.GetLogin(),
+		Url:      utils.GetUrl(),
+		Password: utils.GetPassword(),
+		CreateAt: time.Now(),
+		UpdateAt: time.Now(),
 	}
 
-	if account.Password == "" {
-		account.generatePassword(5)
-	}
-
-	return account, nil
+	return account
 }
