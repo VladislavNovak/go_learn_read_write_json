@@ -1,8 +1,8 @@
 package main
 
 import (
-	"learn/read_write_json/account"
-	"learn/read_write_json/recorder"
+	"learn/read_write_json/fileWorker"
+	"learn/read_write_json/node"
 )
 
 func main() {
@@ -11,11 +11,11 @@ func main() {
 	isRepeat := true
 
 	for isRepeat {
-		account := account.NewAccount()
-		account.PrintData(0)
+		node := node.NewNode()
+		node.PrintData(0)
 
-		bytes := recorder.ConvertToBytes(account)
-		recorder.WriteToFile(fileName, bytes)
+		bytes := fileWorker.ConvertToBytes(node)
+		fileWorker.WriteToFile(fileName, bytes)
 		isRepeat = false
 	}
 }

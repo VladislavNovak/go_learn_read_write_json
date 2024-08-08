@@ -1,14 +1,14 @@
-package recorder
+package fileWorker
 
 import (
 	"encoding/json"
 	"fmt"
-	"learn/read_write_json/account"
+	"learn/read_write_json/node"
 	"os"
 )
 
-func ConvertToBytes(account *account.Account) []byte {
-	bytes, _ := json.Marshal(account)
+func ConvertToBytes(node *node.Node) []byte {
+	bytes, _ := json.Marshal(node)
 	return bytes
 }
 
