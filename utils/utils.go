@@ -73,7 +73,7 @@ func generatePassword(size int) (password string) {
 
 func HasError(err error, srcName string) bool {
 	if err != nil {
-		color.New(color.FgBlue).Printf("Ошибка %s (функция %s)", err.Error(), srcName)
+		color.New(color.FgCyan).Printf("Ошибка %s (функция %s)\n", err.Error(), srcName)
 		return true
 	}
 

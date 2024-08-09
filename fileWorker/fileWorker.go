@@ -2,35 +2,42 @@ package fileWorker
 
 import (
 	"encoding/json"
-	"fmt"
 	"learn/read_write_json/node"
+	"learn/read_write_json/utils"
 	"os"
 )
 
-func ConvertToBytes(node *node.Node) []byte {
-	bytes, _ := json.Marshal(node)
-	return bytes
+// Вернёт слайс битов и true, если парсинг прошел успешно
+func ConvertToBytes(node *node.Node) ([]byte, bool) {
+	bytes, err := json.Marshal(node)
+	if utils.HasError(err, "ConvertToBytes") {
+		return nil, false
+	}
+
+	return bytes, true
 }
 
-func WriteToFile(fileName string, content []byte) {
-	if file, err := os.Create(fileName); err == nil {
-		if _, err := file.Write(content); err == nil {
-			fmt.Println("Файл создан. Контент записан")
-		} else {
-			fmt.Println("Невозможно записать контент", err)
-		}
+// Вернёт true, если файл создан
+func WriteToFile(fileName string, content []byte) bool {
+	// !Получаем указанный файл
+	file, errCaseCreate := os.Create(fileName)
 
-		defer file.Close()
-
-	} else {
-		fmt.Println("Невозможно создать файл", err)
+	if utils.HasError(errCaseCreate, "WriteToFile/Create") {
+		return false
 	}
+
+	defer file.Close()
+
+	// !Записываем в указанный файл
+	_, errCaseWrite := file.Write(content)
+	return !utils.HasError(errCaseWrite, "WriteToFile/Write")
 }
 
-func ReadFromFile(fileName string) {
-	if bytes, err := os.ReadFile(fileName); err == nil {
-		fmt.Println(string(bytes))
-	} else {
-		fmt.Println("Не удалось прочитать файл")
+func ReadFromFile(fileName string) ([]byte, bool) {
+	bytes, err := os.ReadFile(fileName)
+	if utils.HasError(err, "ReadFromFile") {
+		return nil, false
 	}
+
+	return bytes, true
 }
