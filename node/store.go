@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/utils"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -15,7 +16,67 @@ type Store struct {
 	path     string
 }
 
-// Вернёт слайс битов и true, если парсинг прошел успешно
+// Вернёт true, если удалось получить хотя бы один элемент коллекции
+func (store *Store) filterByUrl(url string, action string) bool {
+	if len(store.Nodes) == 0 {
+		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", action)
+		return false
+	}
+
+	collection := []Node{}
+
+	switch action {
+	case "collect":
+		// -- Соберём временную коллекцию --
+		for _, v := range store.Nodes {
+			if strings.Contains(v.Url, url) {
+				collection = append(collection, v)
+			}
+		}
+	case "delete":
+		for k, v := range store.Nodes {
+			if !strings.Contains(v.Url, url) {
+				collection = append(collection, v)
+			} else {
+				color.New(color.FgMagenta).Printf("К удалению: ")
+				v.PrintData(k)
+			}
+		}
+	}
+
+	if len(collection) == 0 {
+		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", action)
+		return false
+	}
+
+	// -- Передадим временную коллекцию в store --
+	store.Nodes = collection
+	return true
+}
+
+// Вернёт true, если удалось получить хотя бы один элемент коллекции
+func (store *Store) DeleteByUrl(url string) bool {
+	return store.filterByUrl(url, "delete")
+}
+
+// Вернёт true, если удалось получить хотя бы один элемент коллекции
+func (store *Store) CollectByUrl(url string) bool {
+	return store.filterByUrl(url, "collect")
+}
+
+func (store *Store) Info() {
+	if len(store.Nodes) == 0 {
+		color.New(color.FgBlue).Println("store/Info. Данных пока нет")
+		return
+	}
+
+	color.New(color.FgGreen).Println("Данные в коллекции:")
+	for k, v := range store.Nodes {
+		v.PrintData(k)
+	}
+}
+
+// Вернёт массив битов и true, если парсинг прошел успешно
 func (store *Store) convertToBytes() ([]byte, bool) {
 	bytes, err := json.Marshal(store)
 	if utils.HasError(err, "Store/ConvertToBytes") {
@@ -51,7 +112,6 @@ func NewStore(fileName string) (*Store, bool) {
 		var store *Store
 
 		err := json.Unmarshal(bytes, &store)
-		color.New(color.FgMagenta).Println("unmarshal:", err)
 		if utils.HasError(err, "NewStore/Unmarshal") {
 			return nil, false
 		}
