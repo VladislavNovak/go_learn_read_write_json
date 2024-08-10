@@ -1,21 +1,9 @@
 package fileWorker
 
 import (
-	"encoding/json"
-	"learn/read_write_json/node"
 	"learn/read_write_json/utils"
 	"os"
 )
-
-// Вернёт слайс битов и true, если парсинг прошел успешно
-func ConvertToBytes(node *node.Node) ([]byte, bool) {
-	bytes, err := json.Marshal(node)
-	if utils.HasError(err, "ConvertToBytes") {
-		return nil, false
-	}
-
-	return bytes, true
-}
 
 // Вернёт true, если файл создан
 func WriteToFile(fileName string, content []byte) bool {

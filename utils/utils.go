@@ -46,7 +46,7 @@ func GetPassword() (password string) {
 	for {
 		sizeRaw := GetUserInput("Введите длину пароля")
 
-		// Конвертируем string to int
+		// !Конвертируем string to int
 		size, err := strconv.Atoi(sizeRaw)
 		if HasError(err, "GetPassword") {
 			color.New(color.FgCyan).Println("Неверный URL. Попробуйте снова")
@@ -69,6 +69,38 @@ func generatePassword(size int) (password string) {
 		password += string(symbols[rand.Intn(len(symbols))])
 	}
 	return
+}
+
+// Вернёт true, если выбран Yes
+func ChooseYesNo(title string) bool {
+	options := [2]string{"Yes", "No"}
+
+	return SelectFromOptions(options[:], title) == "Yes"
+}
+
+func SelectFromOptions(options []string, title string) string {
+	color.New(color.FgCyan).Add(color.Underline).Println(title)
+	for k, v := range options {
+		color.New(color.FgCyan).Printf("%d: %s\n", k, v)
+	}
+
+	for {
+		userInput := GetUserInput("Введите номер")
+
+		//!Конвертируем string в int
+		atoi, err := strconv.Atoi(userInput)
+
+		if HasError(err, "selectFromOptions") {
+			continue
+		}
+
+		if atoi < 0 || atoi >= len(options) {
+			color.New(color.FgCyan).Printf("Неверно. Введите цифру от 0 до %d\n", len(options)-1)
+			continue
+		}
+
+		return options[atoi]
+	}
 }
 
 func HasError(err error, srcName string) bool {

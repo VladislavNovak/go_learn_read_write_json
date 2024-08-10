@@ -1,34 +1,50 @@
 package main
 
 import (
-	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/node"
 	"learn/read_write_json/utils"
-	"strings"
 )
 
+func createAccount(fileName string) {
+	isRepeat := true
+
+	for isRepeat {
+		newNode := node.NewNode()
+		store, isDone := node.NewStore(fileName)
+
+		if !isDone {
+			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
+			continue
+		}
+
+		// Добавляем новый узел
+		store.AddNode(newNode)
+
+		// Сохраняем в файл
+		isSave := store.SaveToFile()
+
+		if !isSave {
+			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
+			continue
+		}
+
+		// Если всё успешно - выходим
+		isRepeat = false
+	}
+}
+
 func main() {
+	menu := [5]string{"Create", "Find", "Remove", "Info", "Exit"}
 	fileName := "account.json"
+	isProcess := true
 
-	for {
-		node := node.NewNode()
-		node.PrintData(0)
-
-		bytes, isConvert := fileWorker.ConvertToBytes(node)
-		if !isConvert {
-			continue
+	for isProcess {
+		selected := utils.SelectFromOptions(menu[:], "Действия с аккаунтом")
+		switch selected {
+		case "Create":
+			createAccount(fileName)
+		default:
+			isProcess = false
 		}
-
-		isWrite := fileWorker.WriteToFile(fileName, bytes)
-		if !isWrite {
-			continue
-		}
-
-		userInput := utils.GetUserInput("Продолжить (Y)?")
-		if strings.Contains("Yy", userInput) {
-			continue
-		}
-
-		break
 	}
 }
