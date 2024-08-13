@@ -2,7 +2,6 @@ package node
 
 import (
 	"encoding/json"
-	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/utils"
 	"strings"
 	"time"
@@ -10,10 +9,60 @@ import (
 	"github.com/fatih/color"
 )
 
+type iDataBase interface {
+	Write([]byte) bool
+	Read() ([]byte, bool)
+}
+
 type Store struct {
 	Nodes    []Node    `json:"nodes"`
 	UpdateAt time.Time `json:"updateAt"`
-	path     string
+}
+
+type StoreExt struct {
+	Store Store
+	db    iDataBase
+}
+
+// false возвращается лишь в случае, если файл обнаружен, но распарсить его не удалось
+func NewStoreExt(dataBase iDataBase) (*StoreExt, bool) {
+	storeExt := &StoreExt{db: dataBase}
+
+	bytes, isRead := storeExt.db.Read()
+
+	// Если удалось прочитать - сохраняем в store
+	if isRead {
+		var store *Store
+
+		err := json.Unmarshal(bytes, &store)
+		if utils.HasError(err, "NewStore/Unmarshal") {
+			return nil, false
+		}
+
+		storeExt.Store = *store
+
+		return storeExt, true
+	}
+
+	color.New(color.FgCyan).Println("Создано новое хранилище!")
+
+	// Либо создаём новый стор с пустыми значениями
+	storeExt.Store = Store{}
+
+	return storeExt, true
+}
+
+// -- МЕТОДЫ --
+
+// Конвертирует лишь сущность Store (!не StoreExt)
+// Вернёт массив битов и true, если парсинг прошел успешно
+func (store *Store) convertToBytes() ([]byte, bool) {
+	bytes, err := json.Marshal(store)
+	if utils.HasError(err, "Store/ConvertToBytes") {
+		return nil, false
+	}
+
+	return bytes, true
 }
 
 // Вернёт true, если удалось получить хотя бы один элемент коллекции
@@ -55,78 +104,38 @@ func (store *Store) filterByUrl(url string, action string) bool {
 }
 
 // Вернёт true, если удалось получить хотя бы один элемент коллекции
-func (store *Store) DeleteByUrl(url string) bool {
-	return store.filterByUrl(url, "delete")
+func (storeExt *StoreExt) DeleteByUrl(url string) bool {
+	return storeExt.Store.filterByUrl(url, "delete")
 }
 
 // Вернёт true, если удалось получить хотя бы один элемент коллекции
-func (store *Store) CollectByUrl(url string) bool {
-	return store.filterByUrl(url, "collect")
+func (storeExt *StoreExt) CollectByUrl(url string) bool {
+	return storeExt.Store.filterByUrl(url, "collect")
 }
 
-func (store *Store) Info() {
-	if len(store.Nodes) == 0 {
+func (storeExt *StoreExt) Info() {
+	if len(storeExt.Store.Nodes) == 0 {
 		color.New(color.FgBlue).Println("store/Info. Данных пока нет")
 		return
 	}
 
 	color.New(color.FgGreen).Println("Данные в коллекции:")
-	for k, v := range store.Nodes {
+	for k, v := range storeExt.Store.Nodes {
 		v.PrintData(k)
 	}
 }
 
-// Вернёт массив битов и true, если парсинг прошел успешно
-func (store *Store) convertToBytes() ([]byte, bool) {
-	bytes, err := json.Marshal(store)
-	if utils.HasError(err, "Store/ConvertToBytes") {
-		return nil, false
-	}
-
-	return bytes, true
-}
-
-func (store *Store) SaveToFile() bool {
-	bytes, isConvert := store.convertToBytes()
+func (storeExt *StoreExt) SaveToFile() bool {
+	bytes, isConvert := storeExt.Store.convertToBytes()
 	if !isConvert {
 		return false
 	}
 
-	isWrite := fileWorker.WriteToFile(store.path, bytes)
+	isWrite := storeExt.db.Write(bytes)
 	return isWrite
 }
 
-func (store *Store) AddNode(node *Node) {
-	store.Nodes = append(store.Nodes, *node)
-	store.UpdateAt = time.Now()
-}
-
-// При создании будет сразу получать информацию об указанном файле
-// Если файл не обнаружен, будет создаваться пустой store
-// false возвращается лишь в случае, если файл обнаружен, но распарсить его не удалось
-func NewStore(fileName string) (*Store, bool) {
-	bytes, isRead := fileWorker.ReadFromFile(fileName)
-
-	// Если удалось прочитать - сохраняем в новый store
-	if isRead {
-		var store *Store
-
-		err := json.Unmarshal(bytes, &store)
-		if utils.HasError(err, "NewStore/Unmarshal") {
-			return nil, false
-		}
-
-		store.path = fileName
-		return store, true
-	}
-
-	color.New(color.FgCyan).Println("Создано новое хранилище!")
-	// Либо создаём новый стор
-	store := &Store{
-		Nodes:    []Node{},
-		UpdateAt: time.Now(),
-		path:     fileName,
-	}
-
-	return store, true
+func (storeExt *StoreExt) AddNode(node *Node) {
+	storeExt.Store.Nodes = append(storeExt.Store.Nodes, *node)
+	storeExt.Store.UpdateAt = time.Now()
 }

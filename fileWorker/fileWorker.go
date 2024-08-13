@@ -5,10 +5,22 @@ import (
 	"os"
 )
 
-// Вернёт true, если файл создан
-func WriteToFile(fileName string, content []byte) bool {
-	// !Получаем указанный файл
-	file, errCaseCreate := os.Create(fileName)
+type FileWorker struct {
+	fileName string
+}
+
+func NewFileWorker(inFileName string) *FileWorker {
+	return &FileWorker{
+		fileName: inFileName,
+	}
+}
+
+// -- МЕТОДЫ --
+
+// return true - если файл создан
+func (f *FileWorker) Write(content []byte) bool {
+	// Получаем указанный файл
+	file, errCaseCreate := os.Create(f.fileName)
 
 	if utils.HasError(errCaseCreate, "WriteToFile/Create") {
 		return false
@@ -16,13 +28,14 @@ func WriteToFile(fileName string, content []byte) bool {
 
 	defer file.Close()
 
-	// !Записываем в указанный файл
+	// Записываем в файл контент
 	_, errCaseWrite := file.Write(content)
 	return !utils.HasError(errCaseWrite, "WriteToFile/Write")
 }
 
-func ReadFromFile(fileName string) ([]byte, bool) {
-	bytes, err := os.ReadFile(fileName)
+// Читает из файла
+func (f *FileWorker) Read() ([]byte, bool) {
+	bytes, err := os.ReadFile(f.fileName)
 	if utils.HasError(err, "ReadFromFile") {
 		return nil, false
 	}

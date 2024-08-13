@@ -1,6 +1,7 @@
 package main
 
 import (
+	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/node"
 	"learn/read_write_json/utils"
 )
@@ -9,8 +10,8 @@ func createRecord(fileName string) {
 	isRepeat := true
 
 	for isRepeat {
-		// -- Создаём новый стор --
-		store, isDone := node.NewStore(fileName)
+		// -- Создаём новое хранилище --
+		store, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
 
 		if !isDone {
 			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
@@ -40,8 +41,8 @@ func printFoundRecords(fileName string) {
 	isRepeat := true
 
 	for isRepeat {
-		// -- Создаём новый узел --
-		newStore, isDone := node.NewStore(fileName)
+		// -- Создаём новое хранилище --
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
 
 		if !isDone {
 			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
@@ -70,7 +71,7 @@ func deleteRecord(fileName string) {
 
 	for isRepeat {
 		// -- Создаём новый узел --
-		newStore, isDone := node.NewStore(fileName)
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
 
 		if !isDone {
 			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
@@ -103,8 +104,8 @@ func printInfo(fileName string) {
 	isRepeat := true
 
 	for isRepeat {
-		// -- Создаём новый узел --
-		newStore, isDone := node.NewStore(fileName)
+		// -- Создаём новое хранилище --
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
 
 		if !isDone {
 			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
