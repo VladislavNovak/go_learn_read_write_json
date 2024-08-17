@@ -39,7 +39,8 @@ func createRecord(fileName string) {
 }
 
 // Находит записи по url и выводит информацию о них
-func printFoundRecords(fileName string) {
+func findRecords(fileName string, mode string, propose string) {
+	// func findRecords(fileName string) {
 	isRepeat := true
 
 	for isRepeat {
@@ -51,9 +52,14 @@ func printFoundRecords(fileName string) {
 			continue
 		}
 
-		userInput := utils.GetUserInput("Введите url (либо его часть), чтобы найти записи")
+		var isCollect bool
 		// -- Получаем коллекцию по условию --
-		isCollect := newStore.CollectByUrl(userInput)
+		switch mode {
+		case "url":
+			isCollect = newStore.DoCollectByUrl(utils.GetUserInput(propose))
+		case "login":
+			isCollect = newStore.DoCollectByLogin(utils.GetUserInput(propose))
+		}
 
 		if !isCollect {
 			isRepeat = utils.ChooseYesNo("Ничего не найдено. Попробовать снова?")
@@ -68,7 +74,15 @@ func printFoundRecords(fileName string) {
 	}
 }
 
-func deleteRecord(fileName string) {
+func findRecordsByUrl(fileName string) {
+	findRecords(fileName, "url", "Введите url (либо его часть), чтобы найти записи")
+}
+
+func findRecordsByLogin(fileName string) {
+	findRecords(fileName, "login", "Введите login (либо его часть), чтобы найти записи")
+}
+
+func deleteRecords(fileName string, mode string, propose string) {
 	isRepeat := true
 
 	for isRepeat {
@@ -80,9 +94,14 @@ func deleteRecord(fileName string) {
 			continue
 		}
 
-		userInput := utils.GetUserInput("Введите url (либо его часть), чтобы найти записи")
+		var isCollect bool
 		// -- Получаем коллекцию по условию --
-		isCollect := newStore.DeleteByUrl(userInput)
+		switch mode {
+		case "url":
+			isCollect = newStore.DoDeleteByUrl(utils.GetUserInput(propose))
+		case "login":
+			isCollect = newStore.DoDeleteByLogin(utils.GetUserInput(propose))
+		}
 
 		if !isCollect {
 			isRepeat = utils.ChooseYesNo("Ничего не найдено. Попробовать снова?")
@@ -100,6 +119,14 @@ func deleteRecord(fileName string) {
 		// Если всё успешно - выходим
 		isRepeat = false
 	}
+}
+
+func deleteRecordsByUrl(fileName string) {
+	deleteRecords(fileName, "url", "Введите url (либо его часть), чтобы найти записи")
+}
+
+func deleteRecordsByLogin(fileName string) {
+	deleteRecords(fileName, "login", "Введите login (либо его часть), чтобы найти записи")
 }
 
 func printInfo(fileName string) {
@@ -136,8 +163,16 @@ func createActionList(keys []string, values []func(string)) map[string]func(stri
 func main() {
 	fileName := "account.json"
 	isProcess := true
-	menu := [5]string{"Create", "Find", "Remove", "Info", "Exit"}
-	listAction := []func(string){createRecord, printFoundRecords, deleteRecord, printInfo}
+	menu := [7]string{"Create", "Find by URL", "Find by Login", "Remove by URL", "Remove by Login", "Info", "Exit"}
+	listAction := []func(string){
+		createRecord,
+		findRecordsByUrl,
+		findRecordsByLogin,
+		deleteRecordsByUrl,
+		deleteRecordsByLogin,
+		printInfo,
+	}
+
 	actions := createActionList(menu[:len(listAction)], listAction)
 
 	for isProcess {

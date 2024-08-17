@@ -65,26 +65,55 @@ func (store *Store) convertToBytes() ([]byte, bool) {
 	return bytes, true
 }
 
-// Вернёт true, если удалось получить хотя бы один элемент коллекции
-func (store *Store) filterByUrl(url string, action string) bool {
+// Предикат. Проверяет вхождение подстроки в login
+func checkSubLogin(node Node, subStr string) bool {
+	return strings.Contains(node.Login, subStr)
+}
+
+// Предикат. Проверяет вхождение подстроки в ull
+func checkSubUrl(node Node, subStr string) bool {
+	return strings.Contains(node.Url, subStr)
+}
+
+func (storeExt *StoreExt) DoDeleteByLogin(subStr string) bool {
+	return storeExt.Store.filter("delete", subStr, checkSubLogin)
+}
+
+func (storeExt *StoreExt) DoDeleteByUrl(subStr string) bool {
+	return storeExt.Store.filter("delete", subStr, checkSubUrl)
+}
+
+func (storeExt *StoreExt) DoCollectByLogin(subStr string) bool {
+	return storeExt.Store.filter("collect", subStr, checkSubLogin)
+}
+
+func (storeExt *StoreExt) DoCollectByUrl(subStr string) bool {
+	return storeExt.Store.filter("collect", subStr, checkSubUrl)
+}
+
+// mode ("delete" | "collect");
+// subStr - критерий фильтрации;
+// checkContains - предикат;
+// return bool (true, если удалось получить хотя бы один элемент коллекции)
+func (store *Store) filter(mode string, subStr string, checkContains func(Node, string) bool) bool {
 	if len(store.Nodes) == 0 {
-		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", action)
+		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", mode)
 		return false
 	}
 
 	collection := []Node{}
 
-	switch action {
+	switch mode {
 	case "collect":
 		// -- Соберём временную коллекцию --
 		for _, v := range store.Nodes {
-			if strings.Contains(v.Url, url) {
+			if checkContains(v, subStr) {
 				collection = append(collection, v)
 			}
 		}
 	case "delete":
 		for k, v := range store.Nodes {
-			if !strings.Contains(v.Url, url) {
+			if !checkContains(v, subStr) {
 				collection = append(collection, v)
 			} else {
 				color.New(color.FgMagenta).Printf("К удалению: ")
@@ -94,23 +123,13 @@ func (store *Store) filterByUrl(url string, action string) bool {
 	}
 
 	if len(collection) == 0 {
-		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", action)
+		color.New(color.FgBlue).Printf("store/%s. Данных пока нет\n", mode)
 		return false
 	}
 
 	// -- Передадим временную коллекцию в store --
 	store.Nodes = collection
 	return true
-}
-
-// Вернёт true, если удалось получить хотя бы один элемент коллекции
-func (storeExt *StoreExt) DeleteByUrl(url string) bool {
-	return storeExt.Store.filterByUrl(url, "delete")
-}
-
-// Вернёт true, если удалось получить хотя бы один элемент коллекции
-func (storeExt *StoreExt) CollectByUrl(url string) bool {
-	return storeExt.Store.filterByUrl(url, "collect")
 }
 
 func (storeExt *StoreExt) Info() {
