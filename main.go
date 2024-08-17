@@ -4,6 +4,8 @@ import (
 	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/node"
 	"learn/read_write_json/utils"
+
+	"github.com/fatih/color"
 )
 
 func createRecord(fileName string) {
@@ -120,24 +122,35 @@ func printInfo(fileName string) {
 	}
 }
 
+// Создание map из двух массивов ([]string, []func(string))
+func createActionList(keys []string, values []func(string)) map[string]func(string) {
+	actionList := make(map[string]func(string), len(keys))
+
+	for k, v := range keys {
+		actionList[v] = values[k]
+	}
+
+	return actionList
+}
+
 func main() {
-	menu := [5]string{"Create", "Find", "Remove", "Info", "Exit"}
 	fileName := "account.json"
 	isProcess := true
+	menu := [5]string{"Create", "Find", "Remove", "Info", "Exit"}
+	listAction := []func(string){createRecord, printFoundRecords, deleteRecord, printInfo}
+	actions := createActionList(menu[:len(listAction)], listAction)
 
 	for isProcess {
 		selected := utils.SelectFromOptions(menu[:], "Действия с аккаунтом")
-		switch selected {
-		case "Create":
-			createRecord(fileName)
-		case "Find":
-			printFoundRecords(fileName)
-		case "Remove":
-			deleteRecord(fileName)
-		case "Info":
-			printInfo(fileName)
-		default:
+		doAction := actions[selected]
+
+		if doAction == nil {
 			isProcess = false
+			continue
 		}
+
+		doAction(fileName)
 	}
+
+	color.New(color.FgGreen).Print("Программа завершена")
 }
