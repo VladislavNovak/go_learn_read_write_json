@@ -64,7 +64,7 @@ func GetUserInput(title string) (userInput string) {
 }
 
 func generatePassword(size int) (password string) {
-	symbols := []rune("abcdefghiklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWYZ123456789!@#$%^&()_+")
+	symbols := []rune("abcdefghiklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWYZ123456789!#$%()*+-:;<>?@[]^_{}~")
 	for i := 0; i < size; i++ {
 		password += string(symbols[rand.Intn(len(symbols))])
 	}

@@ -17,6 +17,14 @@ func NewFileWorker(inFileName string) *FileWorker {
 
 // -- МЕТОДЫ --
 
+func (f *FileWorker) SetFileName(inFileName string) {
+	f.fileName = inFileName
+}
+
+func (f *FileWorker) GetFileName() string {
+	return f.fileName
+}
+
 // return true - если файл создан
 func (f *FileWorker) Write(content []byte) bool {
 	// Получаем указанный файл

@@ -2,6 +2,7 @@ package node
 
 import (
 	"encoding/json"
+	"learn/read_write_json/encrypter"
 	"learn/read_write_json/utils"
 	"strings"
 	"time"
@@ -10,6 +11,8 @@ import (
 )
 
 type iDataBase interface {
+	GetFileName() string
+	SetFileName(string)
 	Write([]byte) bool
 	Read() ([]byte, bool)
 }
@@ -20,23 +23,52 @@ type Store struct {
 }
 
 type StoreExt struct {
-	Store Store
-	db    iDataBase
+	Store     Store
+	db        iDataBase
+	encrypter encrypter.Encripter
 }
 
-// false возвращается лишь в случае, если файл обнаружен, но распарсить его не удалось
-func NewStoreExt(dataBase iDataBase) (*StoreExt, bool) {
-	storeExt := &StoreExt{db: dataBase}
+// (nil, false) - критическая. Файл существует, но невозможно прочитать
+// (object, true) - удалось прочитать данные
+// (object, false) - файла не было. Создано новое хранилище
+func NewStoreExt(dataBase iDataBase, encrypter *encrypter.Encripter) (*StoreExt, bool) {
+	storeExt := &StoreExt{
+		db:        dataBase,
+		encrypter: *encrypter,
+	}
 
 	bytes, isRead := storeExt.db.Read()
 
-	// Если удалось прочитать - сохраняем в store
+	// Если удалось прочитать открытую часть
 	if isRead {
 		var store *Store
 
 		err := json.Unmarshal(bytes, &store)
-		if utils.HasError(err, "NewStore/Unmarshal") {
+		if utils.HasError(err, "NewStore/Public/Unmarshal") {
 			return nil, false
+		}
+
+		if storeExt.encrypter.HasKey() {
+			fileName := storeExt.db.GetFileName()
+			storeExt.db.SetFileName(fileName + ".encr")
+
+			privateBytes, isPrivateRead := storeExt.db.Read()
+
+			// Если удалось прочитать открытую часть
+			if isPrivateRead {
+				passwords := make([]string, 0, len(store.Nodes))
+				decryptedBytes := storeExt.encrypter.DoDecript(privateBytes)
+
+				if err := json.Unmarshal(decryptedBytes, &passwords); err != nil {
+					color.New(color.FgCyan).Println("Ключи дешифровать не удалось!")
+				} else {
+					for k := range store.Nodes {
+						store.Nodes[k].Password = passwords[k]
+					}
+				}
+			}
+
+			defer storeExt.db.SetFileName(fileName)
 		}
 
 		storeExt.Store = *store
@@ -44,21 +76,19 @@ func NewStoreExt(dataBase iDataBase) (*StoreExt, bool) {
 		return storeExt, true
 	}
 
-	color.New(color.FgCyan).Println("Создано новое хранилище!")
-
 	// Либо создаём новый стор с пустыми значениями
+	// !Предусмотреть случай, при котором, в итоге, значения не должны перетирать старые
 	storeExt.Store = Store{}
 
-	return storeExt, true
+	return storeExt, false
 }
 
 // -- МЕТОДЫ --
 
-// Конвертирует лишь сущность Store (!не StoreExt)
 // Вернёт массив битов и true, если парсинг прошел успешно
-func (store *Store) convertToBytes() ([]byte, bool) {
-	bytes, err := json.Marshal(store)
-	if utils.HasError(err, "Store/ConvertToBytes") {
+func (s *StoreExt) convertToBytes(data any) ([]byte, bool) {
+	bytes, err := json.Marshal(data)
+	if utils.HasError(err, "StoreExt/ConvertToBytes") {
 		return nil, false
 	}
 
@@ -145,7 +175,31 @@ func (storeExt *StoreExt) Info() {
 }
 
 func (storeExt *StoreExt) SaveToFile() bool {
-	bytes, isConvert := storeExt.Store.convertToBytes()
+	// -- Сохраняем приватную часть в отдельный файл --
+	if storeExt.encrypter.HasKey() {
+		passwords := make([]string, 0, len(storeExt.Store.Nodes))
+
+		for k, v := range storeExt.Store.Nodes {
+			passwords = append(passwords, v.Password)
+			storeExt.Store.Nodes[k].Password = "ENCRYPTED"
+		}
+
+		bytes, isConvert := storeExt.convertToBytes(passwords)
+		if !isConvert {
+			return false
+		}
+
+		encryptedBytes, isEncrypt := storeExt.encrypter.DoEncrypt(bytes)
+		if isEncrypt {
+			fileName := storeExt.db.GetFileName()
+			storeExt.db.SetFileName(fileName + ".encr")
+			storeExt.db.Write(encryptedBytes)
+			storeExt.db.SetFileName(fileName)
+		}
+	}
+
+	// -- Сохраняем публичную часть в отдельный файл --
+	bytes, isConvert := storeExt.convertToBytes(storeExt.Store)
 	if !isConvert {
 		return false
 	}

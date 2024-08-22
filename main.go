@@ -1,11 +1,13 @@
 package main
 
 import (
+	"learn/read_write_json/encrypter"
 	"learn/read_write_json/fileWorker"
 	"learn/read_write_json/node"
 	"learn/read_write_json/utils"
 
 	"github.com/fatih/color"
+	"github.com/joho/godotenv"
 )
 
 func createRecord(fileName string) {
@@ -13,11 +15,19 @@ func createRecord(fileName string) {
 
 	for isRepeat {
 		// -- Создаём новое хранилище --
-		store, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
+		store, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName), encrypter.NewEncrypter())
 
-		if !isDone {
-			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
+		if !isDone && store == nil {
+			isRepeat = utils.ChooseYesNo("Не удалось прочитать файл с записями. Попробовать снова?")
 			continue
+		}
+
+		if !isDone && store != nil {
+			color.New(color.FgHiBlack).Println("Создано новое хранилище. Записи будет к нему добавлены")
+		}
+
+		if isDone && store != nil {
+			color.New(color.FgHiBlack).Println("Данные успешно прочитаны из файла. Записи будет к нему добавлены")
 		}
 
 		// -- Создаём новый узел --
@@ -45,10 +55,16 @@ func findRecords(fileName string, mode string, propose string) {
 
 	for isRepeat {
 		// -- Создаём новое хранилище --
-		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName), encrypter.NewEncrypter())
 
-		if !isDone {
-			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
+		if !isDone && newStore == nil {
+			isRepeat = utils.ChooseYesNo("Не удалось прочитать файл с записями. Попробовать снова?")
+			continue
+		}
+
+		if !isDone && newStore != nil {
+			color.New(color.FgHiBlack).Println("Записей для поиска нет")
+			isRepeat = false
 			continue
 		}
 
@@ -87,11 +103,21 @@ func deleteRecords(fileName string, mode string, propose string) {
 
 	for isRepeat {
 		// -- Создаём новый узел --
-		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName), encrypter.NewEncrypter())
 
-		if !isDone {
-			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
+		if !isDone && newStore == nil {
+			isRepeat = utils.ChooseYesNo("Не удалось прочитать файл с записями. Попробовать снова?")
 			continue
+		}
+
+		if !isDone && newStore != nil {
+			color.New(color.FgHiBlack).Println("Нечего удалять")
+			isRepeat = false
+			continue
+		}
+
+		if isDone && newStore != nil {
+			color.New(color.FgHiBlack).Println("Данные успешно прочитаны из файла")
 		}
 
 		var isCollect bool
@@ -134,7 +160,7 @@ func printInfo(fileName string) {
 
 	for isRepeat {
 		// -- Создаём новое хранилище --
-		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName))
+		newStore, isDone := node.NewStoreExt(fileWorker.NewFileWorker(fileName), encrypter.NewEncrypter())
 
 		if !isDone {
 			isRepeat = utils.ChooseYesNo("Неудача. Попробовать снова?")
@@ -163,7 +189,16 @@ func createActionList(keys []string, values []func(string)) map[string]func(stri
 func main() {
 	fileName := "account.json"
 	isProcess := true
-	menu := [7]string{"Create", "Find by URL", "Find by Login", "Remove by URL", "Remove by Login", "Info", "Exit"}
+	menu := [7]string{
+		"Create",
+		"Find by URL",
+		"Find by Login",
+		"Remove by URL",
+		"Remove by Login",
+		"Info",
+		"Exit",
+	}
+
 	listAction := []func(string){
 		createRecord,
 		findRecordsByUrl,
@@ -171,6 +206,12 @@ func main() {
 		deleteRecordsByUrl,
 		deleteRecordsByLogin,
 		printInfo,
+	}
+
+	err := godotenv.Load()
+	if err != nil {
+		color.New(color.FgRed).Println("Ключ отсутствует. Попробуйте снова!")
+		return
 	}
 
 	actions := createActionList(menu[:len(listAction)], listAction)

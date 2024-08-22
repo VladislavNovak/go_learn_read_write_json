@@ -2,7 +2,10 @@ module learn/read_write_json
 
 go 1.22.5
 
-require github.com/fatih/color v1.17.0
+require (
+	github.com/fatih/color v1.17.0
+	github.com/joho/godotenv v1.5.1
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
